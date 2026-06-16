@@ -1,0 +1,31 @@
+I want to build an app in C that runs in the terminal. It's a diet plann app. The user should be
+able to use the following features:
+
+1. Input a meal plan for a given day/or week. The command in the terminal should be "ohbobi nmp" as the "ohbobi"
+part should indicate that user want to use the app similar to other cli tools like dotnet.
+    1.1 First input should be the date that the user wants to create the meal plan for. The default 
+    should be tomorrow. Other wise the user should be asked which date should this be planned for.
+    1.2. If the user inputs "ohbobi nmp -w" it means that it should be a weekly plan starting from
+    from today
+    1.2.1 If there are already meal plans for the next week planned the user should be asked if to
+    overwrite or keep the already existing for the given date. The already existing plan for the overlapping
+    day should be shown in the terminal
+
+2. Showing current and past meal plans in a grid. The grid should be well rendered in resoultions
+from small screens to full hd. The command for showing the meal plan showd be "ohbobi smp" as in
+show meal plan.
+    2.1. The grid should support daily, weekly and montly plans. The user should be able to switch
+    between time intervals with "i" and between months with "n"(next) and shift +  "n" (back).
+    Similar to vim commands.
+    2.2. Each meal plan cell in the grid should be big enough to fit  3 meals with at least 4 or 5
+    ingredients.
+
+3. All date formats in english should be supported
+
+4. Instead of a database the app should store everyting in a file most sutiable for the C languate.
+
+5. App should be secure and don't allow dangerous inputs or commands to be executed as an input.
+// to be continued
+
+
+

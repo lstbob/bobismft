@@ -32,6 +32,8 @@
 *.exe
 *.out
 *.app
+ohbobi
+printinput
 *.i*86
 *.x86_64
 *.hex
@@ -53,3 +55,12 @@ dkms.conf
 
 # debug information files
 *.dwo
+
+# Test binaries
+core/tests/test_meal_plan
+core/tests/test_date_utils
+core/tests/test_sanitize
+core/tests/test_storage
+
+# Runtime data
+data/
