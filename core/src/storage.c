@@ -1,5 +1,6 @@
 #include "storage.h"
 #include "date_utils.h"
+#include "meal_plan.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +11,29 @@
 
 #define MAGIC 0x4F484F42
 #define VERSION 2
+
+/*
+ * Force a fixed-size char field to be NUL-terminated. Data read from disk is
+ * untrusted: a crafted or truncated file may omit the terminator, which would
+ * make later printf("%s", ...) read past the buffer.
+ */
+static void terminate_field(char *buf, size_t size) {
+    buf[size - 1] = '\0';
+}
+
+/*
+ * Validate and sanitize a Meal loaded from disk. The checksum only detects
+ * accidental corruption (XOR-8 is trivially forgeable), so every field that
+ * later drives a loop or a %s must be bounds-checked here regardless.
+ */
+static void sanitize_loaded_meal(Meal *m) {
+    terminate_field(m->name, sizeof(m->name));
+    if (m->ingredient_count < 0) m->ingredient_count = 0;
+    if (m->ingredient_count > MAX_INGREDIENTS) m->ingredient_count = MAX_INGREDIENTS;
+    for (int j = 0; j < MAX_INGREDIENTS; j++) {
+        terminate_field(m->ingredients[j], sizeof(m->ingredients[j]));
+    }
+}
 
 static uint8_t compute_checksum(const uint8_t *data, size_t len) {
     uint8_t sum = 0;
@@ -121,17 +145,21 @@ bool load_day_plan(Date date, DayPlan *out) {
         return false;
     }
 
-    fseek(f, (long)data_start, SEEK_SET);
-    fread(&out->date.year, sizeof(out->date.year), 1, f);
-    fread(&out->date.month, sizeof(out->date.month), 1, f);
-    fread(&out->date.day, sizeof(out->date.day), 1, f);
+    bool ok = true;
+    day_plan_clear(out);
 
-    for (int i = 0; i < SLOT_COUNT; i++) {
+    fseek(f, (long)data_start, SEEK_SET);
+    ok = ok && fread(&out->date.year, sizeof(out->date.year), 1, f) == 1;
+    ok = ok && fread(&out->date.month, sizeof(out->date.month), 1, f) == 1;
+    ok = ok && fread(&out->date.day, sizeof(out->date.day), 1, f) == 1;
+
+    for (int i = 0; ok && i < SLOT_COUNT; i++) {
         uint8_t has;
-        fread(&has, sizeof(has), 1, f);
+        if (fread(&has, sizeof(has), 1, f) != 1) { ok = false; break; }
         out->has_meal[i] = has ? true : false;
         if (out->has_meal[i]) {
-            fread(&out->meals[i], sizeof(Meal), 1, f);
+            if (fread(&out->meals[i], sizeof(Meal), 1, f) != 1) { ok = false; break; }
+            sanitize_loaded_meal(&out->meals[i]);
         } else {
             meal_clear(&out->meals[i]);
         }
@@ -139,6 +167,13 @@ bool load_day_plan(Date date, DayPlan *out) {
 
     free(data);
     fclose(f);
+
+    /* Reject the record if any field was short-read or the date is bogus.
+     * out->date drives MONTH_NAMES[month-1] lookups in the renderer. */
+    if (!ok || !date_valid(out->date)) {
+        return false;
+    }
+
     return true;
 }
 

@@ -105,14 +105,19 @@ void grid_draw_week(DayPlan days[7], int count, TermSize term) {
             if (d > 0) printf(" ");
             if (days[d].has_meal[slot] && days[d].meals[slot].ingredient_count > 0) {
                 char line[256];
+                /* Clamp the fill width to both the column width and the
+                 * buffer: cw is derived from terminal columns and is otherwise
+                 * unbounded, so a very wide terminal could overflow line[]. */
+                int limit = cw;
+                if (limit > (int)sizeof(line) - 1) limit = (int)sizeof(line) - 1;
                 int pos = 0;
-                for (int j = 0; j < days[d].meals[slot].ingredient_count && pos < cw; j++) {
+                for (int j = 0; j < days[d].meals[slot].ingredient_count && pos < limit; j++) {
                     if (j > 0) {
-                        line[pos++] = ',';
-                        line[pos++] = ' ';
+                        if (pos < limit) line[pos++] = ',';
+                        if (pos < limit) line[pos++] = ' ';
                     }
                     const char *ing = days[d].meals[slot].ingredients[j];
-                    while (*ing && pos < cw) {
+                    while (*ing && pos < limit) {
                         line[pos++] = *ing;
                         ing++;
                     }
