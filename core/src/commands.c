@@ -14,12 +14,14 @@
 static void print_day_plan(const DayPlan *plan, const char *label) {
     char date_str[MAX_DATE_STR_LEN];
     format_date("long", plan->date, date_str, sizeof(date_str));
-    printf("\n=== %s: %s ===\n", label, date_str);
+    printf("\n" ANSI_BOLD "%s:" ANSI_RESET " %s\n", label, date_str);
     for (int i = 0; i < SLOT_COUNT; i++) {
         if (plan->has_meal[i]) {
-            printf("  %s: %s\n", SLOT_NAMES[i], plan->meals[i].name);
+            printf("  " ANSI_BOLD ANSI_YELLOW "%s:" ANSI_RESET " %s\n",
+                   SLOT_NAMES[i], plan->meals[i].name);
             for (int j = 0; j < plan->meals[i].ingredient_count; j++) {
-                printf("      - %s\n", plan->meals[i].ingredients[j]);
+                printf("    " ANSI_DIM "- %s" ANSI_RESET "\n",
+                       plan->meals[i].ingredients[j]);
             }
         }
     }
@@ -174,8 +176,8 @@ int cmd_smp(int argc, char *argv[]) {
                 } else {
                     char ds[MAX_DATE_STR_LEN];
                     format_date("long", cursor, ds, sizeof(ds));
-                    printf("\n  \033[1m%s\033[0m\n\n", ds);
-                    printf("  (no meal plan for this day)\n");
+                    printf("\n  " ANSI_BOLD ANSI_CYAN "%s" ANSI_RESET "\n\n", ds);
+                    printf("  " ANSI_DIM "(no meal plan for this day)" ANSI_RESET "\n");
                 }
                 break;
             }
@@ -192,8 +194,8 @@ int cmd_smp(int argc, char *argv[]) {
                     }
                 }
                 if (count == 0) {
-                    printf("\n  \033[1mWeekly View\033[0m\n\n");
-                    printf("  (no meal plans this week)\n");
+                    printf("\n  " ANSI_BOLD ANSI_CYAN "Weekly View" ANSI_RESET "\n\n");
+                    printf("  " ANSI_DIM "(no meal plans this week)" ANSI_RESET "\n");
                 } else {
                     grid_draw_week(days, 7, term);
                 }
@@ -214,7 +216,10 @@ int cmd_smp(int argc, char *argv[]) {
                 break;
         }
 
-        printf("\n  [\033[1mi\033[0m]%s  [\033[1mn\033[0m]next  [\033[1mN\033[0m]prev  [\033[1mq\033[0m]quit",
+        printf("\n  " ANSI_DIM "[" ANSI_RESET ANSI_BOLD ANSI_GREEN "i" ANSI_RESET ANSI_DIM "]" ANSI_RESET "%s"
+               "  " ANSI_DIM "[" ANSI_RESET ANSI_BOLD ANSI_GREEN "n" ANSI_RESET ANSI_DIM "]next" ANSI_RESET
+               "  " ANSI_DIM "[" ANSI_RESET ANSI_BOLD ANSI_GREEN "N" ANSI_RESET ANSI_DIM "]prev" ANSI_RESET
+               "  " ANSI_DIM "[" ANSI_RESET ANSI_BOLD ANSI_RED "q" ANSI_RESET ANSI_DIM "]quit" ANSI_RESET,
                view == VIEW_DAILY ? " weekly" : (view == VIEW_WEEKLY ? " monthly" : " daily"));
         printf("\n");
         fflush(stdout);

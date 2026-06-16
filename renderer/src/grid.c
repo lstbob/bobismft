@@ -1,4 +1,5 @@
 #include "grid.h"
+#include "tui.h"
 #include "date_utils.h"
 #include "storage.h"
 
@@ -42,21 +43,23 @@ void grid_draw_day(const DayPlan *plan, TermSize term) {
     format_date("long", plan->date, date_str, sizeof(date_str));
     (void)term;
 
-    printf("\n  \033[1m%s\033[0m\n\n", date_str);
+    printf("\n  " ANSI_BOLD ANSI_CYAN "%s" ANSI_RESET "\n\n", date_str);
 
     int meals_found = 0;
     for (int i = 0; i < SLOT_COUNT; i++) {
         if (plan->has_meal[i]) {
-            printf("  \033[1m%s:\033[0m %s\n", SLOT_NAMES[i], plan->meals[i].name);
+            printf("  " ANSI_BOLD ANSI_YELLOW "%s:" ANSI_RESET " %s\n",
+                   SLOT_NAMES[i], plan->meals[i].name);
             for (int j = 0; j < plan->meals[i].ingredient_count; j++) {
-                printf("    - %s\n", plan->meals[i].ingredients[j]);
+                printf("    " ANSI_DIM "- %s" ANSI_RESET "\n",
+                       plan->meals[i].ingredients[j]);
             }
             meals_found++;
         }
     }
 
     if (meals_found == 0) {
-        printf("  (no meals planned)\n");
+        printf("  " ANSI_DIM "(no meals planned)" ANSI_RESET "\n");
     }
 }
 
@@ -69,14 +72,14 @@ static int col_width(TermSize term) {
 void grid_draw_week(DayPlan days[7], int count, TermSize term) {
     int cw = col_width(term);
 
-    printf("\n  \033[1mWeekly Meal Plan\033[0m\n\n");
+    printf("\n  " ANSI_BOLD ANSI_CYAN "Weekly Meal Plan" ANSI_RESET "\n\n");
 
     for (int d = 0; d < count; d++) {
         if (d > 0) printf(" ");
         char buf[32];
         int dow = day_of_week(days[d].date);
         snprintf(buf, sizeof(buf), "%s %02d", DOW_SHORT[dow], days[d].date.day);
-        printf("\033[1m%-*s\033[0m", cw, buf);
+        printf(ANSI_BOLD ANSI_YELLOW "%-*s" ANSI_RESET, cw, buf);
     }
     printf("\n");
 
@@ -86,10 +89,15 @@ void grid_draw_week(DayPlan days[7], int count, TermSize term) {
             char cell[128];
             if (days[d].has_meal[slot]) {
                 snprintf(cell, sizeof(cell), "%s", days[d].meals[slot].name);
+                printf(ANSI_GREEN);
+                print_trunc(cell, cw);
+                printf(ANSI_RESET);
             } else {
                 cell[0] = '\0';
+                printf(ANSI_DIM);
+                print_trunc(cell, cw);
+                printf(ANSI_RESET);
             }
-            print_trunc(cell, cw);
         }
         printf("\n");
 
@@ -110,7 +118,9 @@ void grid_draw_week(DayPlan days[7], int count, TermSize term) {
                     }
                 }
                 line[pos] = '\0';
+                printf(ANSI_DIM);
                 print_trunc(line, cw);
+                printf(ANSI_RESET);
             } else {
                 printf("%-*s", cw, "");
             }
@@ -137,11 +147,11 @@ void grid_draw_month(int year, int month, const Date *plans, int plan_count, Ter
         snprintf(month_str, sizeof(month_str), "%d", year);
     }
 
-    printf("\n  \033[1m%s\033[0m\n\n", month_str);
+    printf("\n  " ANSI_BOLD ANSI_CYAN "%s" ANSI_RESET "\n\n", month_str);
 
     for (int i = 0; i < 7; i++) {
         if (i > 0) printf(" ");
-        printf("\033[1m%3s\033[0m", DOW_SHORT[i]);
+        printf(ANSI_BOLD ANSI_YELLOW "%3s" ANSI_RESET, DOW_SHORT[i]);
     }
     printf("\n");
 
@@ -170,7 +180,7 @@ void grid_draw_month(int year, int month, const Date *plans, int plan_count, Ter
         }
 
         if (has_plan) {
-            printf("\033[7m%3d\033[0m", day);
+            printf(ANSI_REVERSE ANSI_GREEN "%3d" ANSI_RESET, day);
         } else {
             printf("%3d", day);
         }
