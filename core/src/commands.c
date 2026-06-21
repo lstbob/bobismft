@@ -47,6 +47,7 @@ static bool plan_day_interactive(Date date, bool *skipped) {
     day_plan_clear(&plan);
     plan.date = date;
 
+    bool any_meal = false;
     for (int i = 0; i < SLOT_COUNT; i++) {
         printf("Meal for %s (empty to skip): ", SLOT_NAMES[i]);
         fflush(stdout);
@@ -72,6 +73,13 @@ static bool plan_day_interactive(Date date, bool *skipped) {
         }
         plan.meals[i].ingredient_count = count;
         plan.has_meal[i] = true;
+        any_meal = true;
+    }
+
+    if (!any_meal) {
+        printf("Cancelled.\n");
+        if (skipped) *skipped = true;
+        return false;
     }
 
     if (!save_day_plan(&plan)) {
@@ -84,20 +92,26 @@ static bool plan_day_interactive(Date date, bool *skipped) {
     return true;
 }
 
-static Date prompt_date(void) {
-    printf("Date for meal plan (Enter for tomorrow, or type a date): ");
+static Date prompt_date_default(Date def) {
+    char ds[MAX_DATE_STR_LEN];
+    format_date("long", def, ds, sizeof(ds));
+    printf("Date for meal plan (Enter for %s, or type a date): ", ds);
     fflush(stdout);
 
     char input[128];
     if (!read_line(input, sizeof(input)) || input[0] == '\0') {
-        return date_tomorrow();
+        return def;
     }
 
     Date d;
     if (parse_date(input, &d)) return d;
 
-    printf("Could not parse date. Using tomorrow.\n");
-    return date_tomorrow();
+    printf("Could not parse date. Using %s.\n", ds);
+    return def;
+}
+
+static Date prompt_date(void) {
+    return prompt_date_default(date_tomorrow());
 }
 
 int cmd_nmp(int argc, char *argv[]) {
@@ -219,6 +233,7 @@ int cmd_smp(int argc, char *argv[]) {
         printf("\n  " ANSI_DIM "[" ANSI_RESET ANSI_BOLD ANSI_GREEN "i" ANSI_RESET ANSI_DIM "]" ANSI_RESET "%s"
                "  " ANSI_DIM "[" ANSI_RESET ANSI_BOLD ANSI_GREEN "n" ANSI_RESET ANSI_DIM "]next" ANSI_RESET
                "  " ANSI_DIM "[" ANSI_RESET ANSI_BOLD ANSI_GREEN "N" ANSI_RESET ANSI_DIM "]prev" ANSI_RESET
+               "  " ANSI_DIM "[" ANSI_RESET ANSI_BOLD ANSI_GREEN "e" ANSI_RESET ANSI_DIM "]entry" ANSI_RESET
                "  " ANSI_DIM "[" ANSI_RESET ANSI_BOLD ANSI_RED "q" ANSI_RESET ANSI_DIM "]quit" ANSI_RESET,
                view == VIEW_DAILY ? " weekly" : (view == VIEW_WEEKLY ? " monthly" : " daily"));
         printf("\n");
@@ -263,6 +278,14 @@ int cmd_smp(int argc, char *argv[]) {
                     default: break;
                 }
                 break;
+            case 'e': {
+                raw_mode_disable();
+                printf("\n");
+                Date d = prompt_date_default(cursor);
+                plan_day_interactive(d, NULL);
+                raw_mode_enable();
+                break;
+            }
             case KEY_RIGHT:
                 if (view == VIEW_DAILY) cursor = add_days(cursor, 1);
                 else if (view == VIEW_WEEKLY) cursor = add_days(cursor, 7);

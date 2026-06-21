@@ -7,13 +7,14 @@
 #define VERSION "0.1.0"
 
 static void print_usage(void) {
-    printf("ohbobi -- diet planner v%s\n", VERSION);
+    printf("ohbobi m -- diet planner v%s\n", VERSION);
     printf("Usage:\n");
-    printf("  ohbobi nmp          New meal plan (default: tomorrow)\n");
-    printf("  ohbobi nmp -w       New weekly meal plan\n");
-    printf("  ohbobi smp          Show meal plan grid\n");
-    printf("  ohbobi -h, --help   Show this help\n");
-    printf("  ohbobi -v, --version Show version\n");
+    printf("  ohbobi m              Show meal plan grid (default)\n");
+    printf("  ohbobi m nmp          New meal plan (default: tomorrow)\n");
+    printf("  ohbobi m nmp -w       New weekly meal plan\n");
+    printf("  ohbobi m smp          Show meal plan grid\n");
+    printf("  ohbobi m -h, --help   Show this help\n");
+    printf("  ohbobi m -v, --version Show version\n");
 }
 
 int main(int argc, char *argv[]) {
@@ -23,8 +24,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (argc < 2) {
-        print_usage();
-        return 1;
+        return cmd_smp(argc, argv);
     }
 
     if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--version") == 0) {
-        printf("ohbobi v%s\n", VERSION);
+        printf("ohbobi m (meal) v%s\n", VERSION);
         return 0;
     }
 

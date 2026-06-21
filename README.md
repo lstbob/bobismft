@@ -1,4 +1,4 @@
-# ohbobi — Terminal Diet Planner
+# ohbobismft — Terminal Diet Planner
 
 A CLI diet planner written in C. Create and view meal plans from the terminal with an interactive TUI grid.
 
@@ -17,14 +17,14 @@ git clone <repo-url> && cd bobismft
 make
 ```
 
-This produces the `ohbobi` binary in the current directory.
+This produces the `ohbobismft` binary in the current directory.
 
 ### Add to PATH
 
 **Option A — copy to a directory already on PATH:**
 
 ```sh
-sudo cp ohbobi /usr/local/bin/
+sudo cp ohbobismft /usr/local/bin/
 ```
 
 **Option B — add the project directory to PATH (add to `~/.bashrc` or `~/.zshrc`):**
@@ -42,7 +42,7 @@ source ~/.bashrc   # or source ~/.zshrc
 Verify it works:
 
 ```sh
-ohbobi --version
+ohbobismft --version
 ```
 
 ## Usage
@@ -50,7 +50,7 @@ ohbobi --version
 ### Create a meal plan
 
 ```sh
-ohbobi nmp
+ohbobismft nmp
 ```
 
 Prompts for a date (default: tomorrow), then meal slots (Breakfast, Lunch, Dinner, Snack). Each meal accepts up to 5 ingredients. If a plan already exists for that date, it shows the existing plan and asks whether to overwrite.
@@ -58,7 +58,7 @@ Prompts for a date (default: tomorrow), then meal slots (Breakfast, Lunch, Dinne
 **Weekly plan:**
 
 ```sh
-ohbobi nmp -w
+ohbobismft nmp -w
 ```
 
 Plans 7 days starting from today.
@@ -66,7 +66,7 @@ Plans 7 days starting from today.
 ### View meal plans
 
 ```sh
-ohbobi smp
+ohbobismft smp
 ```
 
 Opens an interactive TUI grid. Navigate with:
@@ -82,7 +82,7 @@ Opens an interactive TUI grid. Navigate with:
 **Start at a specific date:**
 
 ```sh
-ohbobi smp -d 2026-06-17
+ohbobismft smp -d 2026-06-17
 ```
 
 ### Supported date formats
