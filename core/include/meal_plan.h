@@ -2,6 +2,7 @@
 #define MEAL_PLAN_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #define MAX_MEAL_NAME_LEN 64
 #define MAX_INGREDIENT_LEN 48
@@ -45,5 +46,17 @@ void day_plan_clear(DayPlan *plan);
 void week_plan_clear(WeekPlan *plan);
 bool date_valid(Date d);
 int date_cmp(Date a, Date b);
+
+/* Human-readable serialization for vi/nvim-based editing.
+ *   # <SlotName>
+ *   <meal name>
+ *   - ingredient
+ *   - ingredient
+ *
+ *   # <SlotName>
+ *   ...
+ * Slots without a meal are omitted. */
+size_t day_plan_serialize(const DayPlan *plan, char *out, size_t out_size);
+bool day_plan_parse(const char *text, DayPlan *out);
 
 #endif

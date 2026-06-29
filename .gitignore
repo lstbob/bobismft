@@ -61,6 +61,12 @@ core/tests/test_meal_plan
 core/tests/test_date_utils
 core/tests/test_sanitize
 core/tests/test_storage
+core/tests/test_editor
+core/tests/test_meal_plan_serialize
 
 # Runtime data
 data/
+compile_commands.json
+
+# opencode
+.opencode/

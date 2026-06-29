@@ -4,6 +4,7 @@
 #include "storage.h"
 #include "input.h"
 #include "sanitize.h"
+#include "editor.h"
 #include "tui.h"
 #include "grid.h"
 
@@ -27,63 +28,61 @@ static void print_day_plan(const DayPlan *plan, const char *label) {
     }
 }
 
-static bool plan_day_interactive(Date date, bool *skipped) {
+static bool plan_day_via_editor(Date date, bool *skipped) {
     char date_str[MAX_DATE_STR_LEN];
     format_date("long", date, date_str, sizeof(date_str));
-    printf("\n--- Planning %s ---\n", date_str);
+    printf("\n--- Meal plan for %s ---\n", date_str);
+
+    char initial[2048];
+    size_t initial_len = 0;
 
     if (plan_exists(date)) {
         DayPlan existing;
         load_day_plan(date, &existing);
         print_day_plan(&existing, "Existing plan");
+        initial_len = day_plan_serialize(&existing, initial, sizeof(initial));
+    } else {
+        DayPlan empty;
+        day_plan_clear(&empty);
+        empty.date = date;
+        initial_len = day_plan_serialize(&empty, initial, sizeof(initial));
+    }
 
-        if (!confirm("Overwrite existing plan")) {
-            if (skipped) *skipped = true;
-            return false;
-        }
+    printf("Opening editor...\n");
+    char *edited = NULL;
+    size_t edited_len = 0;
+    if (!open_editor(initial_len > 0 ? initial : NULL, initial_len,
+                     &edited, &edited_len)) {
+        fprintf(stderr, "error: editor failed\n");
+        if (skipped) *skipped = true;
+        return false;
     }
 
     DayPlan plan;
     day_plan_clear(&plan);
     plan.date = date;
+    if (!day_plan_parse(edited, &plan)) {
+        fprintf(stderr, "error: could not parse plan\n");
+        free(edited);
+        if (skipped) *skipped = true;
+        return false;
+    }
+    free(edited);
 
     bool any_meal = false;
     for (int i = 0; i < SLOT_COUNT; i++) {
-        printf("Meal for %s (empty to skip): ", SLOT_NAMES[i]);
-        fflush(stdout);
-
-        char meal_name[MAX_MEAL_NAME_LEN];
-        if (!read_line(meal_name, sizeof(meal_name))) return false;
-        if (meal_name[0] == '\0') continue;
-
-        snprintf(plan.meals[i].name, MAX_MEAL_NAME_LEN, "%s", meal_name);
-
-        printf("  Number of ingredients (max %d): ", MAX_INGREDIENTS);
-        fflush(stdout);
-
-        char count_buf[16];
-        if (!read_line(count_buf, sizeof(count_buf))) return false;
-        int count = parse_positive_int(count_buf);
-        if (count > MAX_INGREDIENTS) count = MAX_INGREDIENTS;
-
-        for (int j = 0; j < count; j++) {
-            printf("  Ingredient %d: ", j + 1);
-            fflush(stdout);
-            if (!read_line(plan.meals[i].ingredients[j], MAX_INGREDIENT_LEN)) return false;
-        }
-        plan.meals[i].ingredient_count = count;
-        plan.has_meal[i] = true;
-        any_meal = true;
+        if (plan.has_meal[i]) { any_meal = true; break; }
     }
 
     if (!any_meal) {
-        printf("Cancelled.\n");
+        printf("No meals entered — nothing to save.\n");
         if (skipped) *skipped = true;
         return false;
     }
 
     if (!save_day_plan(&plan)) {
         fprintf(stderr, "error: could not save plan for %s\n", date_str);
+        if (skipped) *skipped = true;
         return false;
     }
 
@@ -127,7 +126,7 @@ int cmd_nmp(int argc, char *argv[]) {
         for (int i = 0; i < 7; i++) {
             Date d = add_days(start, i);
             bool was_skipped = false;
-            if (!plan_day_interactive(d, &was_skipped)) {
+            if (!plan_day_via_editor(d, &was_skipped)) {
                 if (was_skipped) skipped++;
             } else {
                 planned++;
@@ -137,7 +136,7 @@ int cmd_nmp(int argc, char *argv[]) {
                planned, skipped);
     } else {
         Date target = prompt_date();
-        plan_day_interactive(target, NULL);
+        plan_day_via_editor(target, NULL);
     }
 
     return 0;
@@ -233,7 +232,7 @@ int cmd_smp(int argc, char *argv[]) {
         printf("\n  " ANSI_DIM "[" ANSI_RESET ANSI_BOLD ANSI_GREEN "i" ANSI_RESET ANSI_DIM "]" ANSI_RESET "%s"
                "  " ANSI_DIM "[" ANSI_RESET ANSI_BOLD ANSI_GREEN "n" ANSI_RESET ANSI_DIM "]next" ANSI_RESET
                "  " ANSI_DIM "[" ANSI_RESET ANSI_BOLD ANSI_GREEN "N" ANSI_RESET ANSI_DIM "]prev" ANSI_RESET
-               "  " ANSI_DIM "[" ANSI_RESET ANSI_BOLD ANSI_GREEN "e" ANSI_RESET ANSI_DIM "]entry" ANSI_RESET
+               "  " ANSI_DIM "[" ANSI_RESET ANSI_BOLD ANSI_GREEN "e" ANSI_RESET ANSI_DIM "]edit" ANSI_RESET
                "  " ANSI_DIM "[" ANSI_RESET ANSI_BOLD ANSI_RED "q" ANSI_RESET ANSI_DIM "]quit" ANSI_RESET,
                view == VIEW_DAILY ? " weekly" : (view == VIEW_WEEKLY ? " monthly" : " daily"));
         printf("\n");
@@ -282,7 +281,7 @@ int cmd_smp(int argc, char *argv[]) {
                 raw_mode_disable();
                 printf("\n");
                 Date d = prompt_date_default(cursor);
-                plan_day_interactive(d, NULL);
+                plan_day_via_editor(d, NULL);
                 raw_mode_enable();
                 break;
             }
